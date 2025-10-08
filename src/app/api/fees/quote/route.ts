@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { db } from "@/lib/db";
 import { feeQuotes, invoices, feePlans, apps, users } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 
 // POST /api/fees/quote - Generate fee quote for invoice
 export async function POST(request: NextRequest) {
