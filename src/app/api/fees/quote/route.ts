@@ -8,21 +8,13 @@ import { eq, and } from "drizzle-orm";
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession();
-    
+
     if (!session?.user?.address) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await request.json();
-    const { 
-      invoiceId,
-      chain,
-      gasPrice,
-      gasLimit
-    } = body;
+    const { invoiceId, chain, gasPrice, gasLimit } = body;
 
     // Validate required fields
     if (!invoiceId || !chain) {
@@ -38,10 +30,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json(
-        { error: "User not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     // Get invoice with app details
@@ -59,18 +48,12 @@ export async function POST(request: NextRequest) {
     });
 
     if (!invoice) {
-      return NextResponse.json(
-        { error: "Invoice not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
     }
 
     // Verify invoice belongs to user's app
     if (invoice.app.userId !== user.id) {
-      return NextResponse.json(
-        { error: "Invoice not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
     }
 
     // Get active fee plan for the app
@@ -92,18 +75,18 @@ export async function POST(request: NextRequest) {
           break;
         case "percentage":
           const bps = feePlan.bps || 0;
-          platformFee = (invoiceAmount * bps / 10000).toString();
+          platformFee = ((invoiceAmount * bps) / 10000).toString();
           break;
         case "tiered":
           // Implement tiered fee calculation
-          const tiers = feePlan.tiers as any[] || [];
+          const tiers = (feePlan.tiers as any[]) || [];
           let calculatedFee = 0;
           for (const tier of tiers) {
             if (invoiceAmount >= tier.minAmount) {
               if (tier.type === "flat") {
                 calculatedFee = tier.fee;
               } else if (tier.type === "percentage") {
-                calculatedFee = invoiceAmount * tier.bps / 10000;
+                calculatedFee = (invoiceAmount * tier.bps) / 10000;
               }
             }
           }
@@ -118,31 +101,42 @@ export async function POST(request: NextRequest) {
     // In a real implementation, this would query actual gas prices from the network
     const mockGasPrice = gasPrice || "20000000000"; // 20 gwei
     const mockGasLimit = gasLimit || 21000;
-    const networkFee = (parseFloat(mockGasPrice) * mockGasLimit / 1e18).toString();
+    const networkFee = (
+      (parseFloat(mockGasPrice) * mockGasLimit) /
+      1e18
+    ).toString();
 
     // Calculate total fee
-    const totalFee = (parseFloat(platformFee) + parseFloat(networkFee)).toString();
+    const totalFee = (
+      parseFloat(platformFee) + parseFloat(networkFee)
+    ).toString();
 
     // Set expiration time (15 minutes from now)
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
     // Create fee quote
-    const [newFeeQuote] = await db.insert(feeQuotes).values({
-      invoiceId,
-      networkFee,
-      platformFee,
-      totalFee,
-      currency: invoice.currency,
-      chain,
-      gasPrice: mockGasPrice,
-      gasLimit: mockGasLimit,
-      expiresAt,
-      generatedAt: new Date(),
-    }).returning();
+    const [newFeeQuote] = await db
+      .insert(feeQuotes)
+      .values({
+        invoiceId,
+        networkFee,
+        platformFee,
+        totalFee,
+        currency: invoice.currency,
+        chain,
+        gasPrice: mockGasPrice,
+        gasLimit: mockGasLimit,
+        expiresAt,
+        generatedAt: new Date(),
+      })
+      .returning();
 
-    return NextResponse.json({
-      feeQuote: newFeeQuote,
-    }, { status: 201 });
+    return NextResponse.json(
+      {
+        feeQuote: newFeeQuote,
+      },
+      { status: 201 }
+    );
   } catch (error) {
     console.error("Fee quote generation error:", error);
     return NextResponse.json(
@@ -156,12 +150,9 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession();
-    
+
     if (!session?.user?.address) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -180,10 +171,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json(
-        { error: "User not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     // Get invoice with app details
@@ -201,18 +189,12 @@ export async function GET(request: NextRequest) {
     });
 
     if (!invoice) {
-      return NextResponse.json(
-        { error: "Invoice not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
     }
 
     // Verify invoice belongs to user's app
     if (invoice.app.userId !== user.id) {
-      return NextResponse.json(
-        { error: "Invoice not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
     }
 
     // Get fee quotes for the invoice
@@ -232,3 +214,4 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+//added a comment
